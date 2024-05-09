@@ -13,4 +13,4 @@ ISSDC_PASSWORD=yyy
 ```
 
 # Run
-I sure hope so
+I sure hope so (run index)
