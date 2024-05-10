@@ -19,17 +19,17 @@ if __name__ == "__main__":
     # '/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/iir_collection/data/calibrated/20240209/ch2_iir_nci_20240209T0809549481_d_img_d18.zip?iirs',
     # '/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/iir_collection/data/calibrated/20240210/ch2_iir_nci_20240210T1037346083_d_img_d18.zip?iirs',
     # '/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/iir_collection/data/calibrated/20240207/ch2_iir_nci_20240207T0130596160_d_img_d18.zip?iirs',
-    # '/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/iir_collection/data/calibrated/20240202/ch2_iir_nci_20240202T0230093217_d_img_d18.zip?iirs'
+    # '/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/iir_collection/data/calibrated/20240202/ch2_iir_nci_20240202T0230093217_d_img_d18.zip?iirs',
 
     # Mid file (~100 MB) all good
-    # '/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/iir_collection/data/raw/20221219/ch2_iir_nri_20221219T0005336511_d_img_d32.zip?iirs'
+    # '/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/iir_collection/data/raw/20221219/ch2_iir_nri_20221219T0005336511_d_img_d32.zip?iirs',
     # Lil files all good
     '/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/cla_collection/cla/data/calibrated/2023/11/23/ch2_cla_l1_20231123T231214771_20231123T231220147.fits?class'
   ]
 
   data_dir = './data'
   pathlib.Path(data_dir).mkdir(parents=True, exist_ok=True)
-  
+
   block_size = 1024  # block size for downloading
   tqdm_params = dict(unit='B', unit_scale=True, unit_divisor=1024, miniters=1)
 
