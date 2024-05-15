@@ -1,14 +1,68 @@
 import os
 import pathlib
+import time
+import logging
+import traceback
+import functools
+from http import HTTPStatus
+from requests.exceptions import HTTPError
 from dotenv import load_dotenv
 from issdc import ISSDCRequester, BASE_URL
 from tqdm import tqdm
 
 load_dotenv()
-TQDM_PARAMS = dict(unit='B', unit_scale=True, unit_divisor=1024, miniters=1)
+TQDM_PARAMS = dict(unit='B', unit_scale=True, unit_divisor=1024, mininterval=1)
 BLOCK_SIZE = 8192
+RETRIES = 3
+RETRY_SLEEP_SEC = 3
+RETRY_HTTP_CODES = [
+    HTTPStatus.TOO_MANY_REQUESTS,
+    HTTPStatus.INTERNAL_SERVER_ERROR,
+    HTTPStatus.BAD_GATEWAY,
+    HTTPStatus.SERVICE_UNAVAILABLE,
+    HTTPStatus.GATEWAY_TIMEOUT,
+]
 
 # TODO: make it a method of ISSDC?
+def retry_http(retries, retry_sleep_sec, retry_http_codes):
+    """
+    Decorator that retries wrapped function num times after sleep seconds if
+    any of the exceptions supplied are raised.
+    
+    Mostly from https://stackoverflow.com/a/72316062 and https://stackoverflow.com/a/61463451
+    
+    Parameters
+    ----------
+    retries : int
+      Number of retries
+    retry_sleep : float
+      Wait time in seconds before next retry
+    exceptions : list
+      Exceptions that will trigger a retry
+    """
+    def decorator(func):
+        """decorator"""
+        # preserve information about the original function, or the func name will be "wrapper" not "func"
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            """wrapper"""
+            for attempt in range(retries):
+                try:
+                    return func(*args, **kwargs)
+                except HTTPError as err:  # Other exceptions are raised as usual
+                    logging.error(err)
+                    logging.error(traceback.format_exc())
+                    if err.response.status_code not in retry_http_codes:
+                        raise err
+                    time.sleep(retry_sleep_sec)
+                logging.error("Trying attempt %s of %s.", attempt + 1, retries)
+            logging.error("func %s retry failed", func)
+            raise Exception('Exceed max retry num: {} failed'.format(retries))
+        return wrapper
+    return decorator
+
+
+@retry_http(RETRIES, RETRY_SLEEP_SEC, RETRY_HTTP_CODES)
 def download(session, file_url, data_dir, block_size=BLOCK_SIZE):
   """
   Download a file using a logged in ISSDCRequester session. 
@@ -34,7 +88,7 @@ def download(session, file_url, data_dir, block_size=BLOCK_SIZE):
         for chunk in response.iter_content(block_size):
           f.write(chunk)
           pbar.update(len(chunk))
-  print(f'Downloaded complete: {fp}.')
+  print(f'Downloaded complete: {fp}')
 
 if __name__ == "__main__":
   ISSDC_USERNAME = os.getenv('ISSDC_USERNAME')
