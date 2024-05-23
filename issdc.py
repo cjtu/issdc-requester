@@ -1,6 +1,7 @@
 import requests
 import re
 import interval
+import logging
 
 BASE_URL = 'https://pradan.issdc.gov.in'
 PAYLOAD_VISIT_URL = f'{BASE_URL}/ch2/protected/payload.xhtml'
@@ -34,7 +35,7 @@ class ISSDCRequester:
       headers=headers,
       allow_redirects=True)
 
-    print('Payload visit status:', payload_visit_res.status_code)
+    logging.info(f'Payload visit status: {payload_visit_res.status_code}')
 
     auth_url_regex = re.compile('<form.*action=\"(https://idp\\.issdc\\.gov\\.in/auth.*?)\"')
     auth_url_match = auth_url_regex.search(payload_visit_res.text)
@@ -42,7 +43,7 @@ class ISSDCRequester:
       raise Exception("Unable to find auth URL")
 
     auth_url = auth_url_match.group(1).replace('&amp;', '&')
-    print('Aquired auth URL:', auth_url)
+    logging.info(f'Aquired auth URL: {auth_url}')
 
     # Store cookies for next request
     cookies = requests.utils.cookiejar_from_dict(requests.utils.dict_from_cookiejar(self.request_session.cookies))
@@ -57,7 +58,8 @@ class ISSDCRequester:
       allow_redirects=False)
 
     if auth_res.status_code == 302:
-      print('Auth successful')
+      print("Hackerman: I'm in 😎")
+      logging.info('Auth successful')
       return auth_res.cookies
     else:
       raise Exception('Failed final login step, incorrect status code:', auth_res.status_code)
@@ -67,7 +69,7 @@ class ISSDCRequester:
     Send the "keep alive" request to the issdc server.
     """
     payload_visit_res = self.request_session.get(PAYLOAD_VISIT_URL)
-    print('Keep alive payload visit status:', payload_visit_res.status_code)
+    logging.info(f'Keep alive payload visit status: {payload_visit_res.status_code}')
 
   def refresh(self):
     """
