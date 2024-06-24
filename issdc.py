@@ -58,8 +58,7 @@ class ISSDCRequester:
       allow_redirects=False)
 
     if auth_res.status_code == 302:
-      print("Hackerman: I'm in 😎")
-      logging.info('Auth successful')
+      logging.info("Hackerman: I'm in 😎")
       return auth_res.cookies
     else:
       raise Exception('Failed final login step, incorrect status code:', auth_res.status_code)

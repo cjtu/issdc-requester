@@ -1,11 +1,12 @@
 import os
+import sys
 import pathlib
 import time
 import logging
 import functools
 from http import HTTPStatus
 from http.client import IncompleteRead
-from requests.exceptions import HTTPError
+from requests.exceptions import HTTPError, ChunkedEncodingError
 from dotenv import load_dotenv
 from issdc import ISSDCRequester, BASE_URL
 from tqdm import tqdm
@@ -49,26 +50,27 @@ def retry_http(retries, retry_sleep_sec, retry_http_codes):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             """wrapper"""
-            for attempt in range(retries):
-                try:
-                    return func(*args, **kwargs)
-                except HTTPError as err:  # Other exceptions are raised as usual
-                    logging.error(err, exc_info=True)
-                    if err.response.status_code not in retry_http_codes:
-                        logging.error(f"Unexpected HTTPError {err.response.status_code}, handle or add to retry_http_codes.")
-                        # raise err  # TODO: raise unexpected http errors?
-                except IncompleteRead as err:
-                    # Connection Broken (IncompleteRead->ProtocolError->ChunkedEncodingError)
-                    logging.debug(err, exc_info=True)
-                    logging.error('Lost connection to server.')  
-                except Exception as err:
-                    logging.error(err, exc_info=True)
-                    raise err
-            
-                logging.error(f"Retrying... (attempt {attempt+1} / {retries}).")
-                time.sleep(retry_sleep_sec)
+            attempt = 0
+            while attempt < retries:
+              try:
+                  return func(*args, **kwargs)
+              except HTTPError as err:  # Other exceptions are raised as usual
+                  logging.error(err, exc_info=True)
+                  if err.response.status_code not in retry_http_codes:
+                      logging.error(f"Unexpected HTTPError {err.response.status_code}, handle or add to retry_http_codes.")
+                      # raise err  # TODO: raise unexpected http errors?
+              except (IncompleteRead, ChunkedEncodingError) as err:
+                  # logging.debug(err, exc_info=True)  # Connection Broken (IncompleteRead->ProtocolError->ChunkedEncodingError)
+                  logging.error('Lost connection to server.')
+                  attempt -= 1
+              except Exception as err:
+                  logging.error(err, exc_info=True)
+                  # raise err
+              attempt += 1
+              logging.error(f"Retrying... (attempt {attempt+1} / {retries}).")
+              time.sleep(retry_sleep_sec)
             logging.error("func %s retry failed", func)
-            raise RuntimeError(f'Exceeded max retries: {retries} failed') from err
+            raise RuntimeError(f'Exceeded max retries: {retries} failed')
         return wrapper
     return decorator
 
@@ -88,7 +90,9 @@ def _download(session, file_url, data_dir, total_size, byte_range_support, block
     pos = f.tell()
     logging.debug(f'Opened file: {fp} at byte {pos}.')
     if pos >= total_size:
-      print(f'File already exists: {fp}')
+      if total_size == 0:
+        logging.error(f'File not found on server: {fp}')
+        os.remove(fp)
       logging.info(f'Skipping... File already downloaded: {fp}')
       return
     headers = None
@@ -123,8 +127,51 @@ def download(session, file_url, data_dir):
   return _download(session, file_url, data_dir, total_size, byte_range_support)
 
 
+def read_file_paths(file_path: str, instrument: str='iirs') -> list:
+    """
+    Reads file paths from a given text file, one per line.
+    
+    :param file_path: Path to the text file containing file paths.
+    :return: List of file paths.
+    """
+    paths = []
+    with open(file_path, 'r') as f:
+        for line in f:
+          if line[0] in ('#', '\n'):
+              continue
+          line = line.strip()
+          if line.startswith('https://pradan.issdc.gov.in'):
+              line = line.replace('https://pradan.issdc.gov.in', '')
+          elif line.startswith('/ch2/protected/'):
+              pass # already in correct format
+          elif line.startswith('ch2_'): # generate full path from img name
+            if instrument == 'iirs':
+              date = line.split('_')[3][:8]
+              line = f'/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/iir_collection/data/calibrated/{date}/{line}.zip?iirs'
+            else:
+                logging.error(f'Instrument {instrument} not supported, please supply full path starting with "/ch2/protected/".')
+          else:
+            logging.error(f'Unsupported file path format: {line}')
+          paths.append(line)
+    return paths
+
+
 if __name__ == "__main__":
   logging.basicConfig(level=logging.DEBUG, filename='issdc.log', filemode='a', format="%(asctime)s [%(levelname)s] %(message)s",)
+
+  # Parse file paths from first cmd line arg
+  if len(sys.argv) > 1:
+     file_paths = read_file_paths(sys.argv[1])
+     logging.info(f'Got {len(file_paths)} file paths from {sys.argv[1]}.')  
+  else:
+    file_paths = [
+      # Lil files all good
+      '/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/cla_collection/cla/data/calibrated/2023/11/23/ch2_cla_l1_20231123T231214771_20231123T231220147.fits?class',
+    
+      # Mid file (25-100 MB) all good
+      # '/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/xsm_collection/auto/2024/ch2_xsm_20240428_v1.zip?xsm',
+      ]
+  
   logging.info(f'Starting ISSDC download script...')
   ISSDC_USERNAME = os.getenv('ISSDC_USERNAME')
   ISSDC_PASSWORD = os.getenv('ISSDC_PASSWORD')
@@ -132,20 +179,6 @@ if __name__ == "__main__":
   # NOTE: If you just want to type your password in for testing, make sure you use a raw string so you don't need to escape it
   creds = ISSDCRequester(username=ISSDC_USERNAME, password=ISSDC_PASSWORD)
 
-  file_paths = [
-    # Lil files all good
-    '/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/cla_collection/cla/data/calibrated/2023/11/23/ch2_cla_l1_20231123T231214771_20231123T231220147.fits?class',
-    
-    # Mid file (25-100 MB) all good
-    # '/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/xsm_collection/auto/2024/ch2_xsm_20240428_v1.zip?xsm',
-    '/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/iir_collection/data/raw/20221219/ch2_iir_nri_20221219T0005336511_d_img_d32.zip?iirs',
-    
-    # Big files... probably needs some work
-    # '/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/iir_collection/data/calibrated/20240209/ch2_iir_nci_20240209T0809549481_d_img_d18.zip?iirs',
-    # '/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/iir_collection/data/calibrated/20240210/ch2_iir_nci_20240210T1037346083_d_img_d18.zip?iirs',
-    '/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/iir_collection/data/calibrated/20240207/ch2_iir_nci_20240207T0130596160_d_img_d18.zip?iirs',
-    # '/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/iir_collection/data/calibrated/20240202/ch2_iir_nci_20240202T0230093217_d_img_d18.zip?iirs',
-  ]
 
   data_dir = './data'
   pathlib.Path(data_dir).mkdir(parents=True, exist_ok=True)
@@ -153,4 +186,4 @@ if __name__ == "__main__":
   for file_path in file_paths:
     file_url = f'{BASE_URL}{file_path}'
     download(creds, file_url, data_dir)
-  print(f'Finished downloading to {data_dir}.')
+  logging.info(f'Finished downloading to {data_dir}.')
