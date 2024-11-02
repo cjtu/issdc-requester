@@ -91,8 +91,9 @@ def _download(session, file_url, data_dir, total_size, byte_range_support, block
     logging.debug(f'Opened file: {fp} at byte {pos}.')
     if pos >= total_size:
       if total_size == 0:
-        logging.error(f'File not found on server: {fp}')
+        logging.error(f'File not found on server: {file_url}')
         os.remove(fp)
+        return
       logging.info(f'Skipping... File already downloaded: {fp}')
       return
     headers = None
@@ -126,8 +127,30 @@ def download(session, file_url, data_dir):
     total_size = int(response.headers.get('content-length', 0))
   return _download(session, file_url, data_dir, total_size, byte_range_support)
 
+def img2url(img_name: str) -> str:
+  """
+  Convert image name to full ISSDC download URL.
+  
+  Parameters
+  ----------
+  img_name : str
+    Image name, e.g. 'ch2_iir_nci_20210613T1540537788_d_img_hw1'
+  """
+  img_url = img_name
+  if img_url.startswith('https://pradan.issdc.gov.in'):
+      img_url = img_url.replace('https://pradan.issdc.gov.in', '')
+  elif img_url.startswith('/ch2/protected/'):
+      pass # already in correct format
+  elif img_url.startswith('ch2_iir'): # generate full path from img name
+    date = img_url.split('_')[3][:8]
+    pre = '/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/iir_collection/data/calibrated/'
+    img_url = pre + f'{date}/{img_url}.zip?iirs'
+  else:
+    logging.error(f'Unsupported file path format: {img_url}')
+  return img_url
 
-def read_file_paths(file_path: str, instrument: str='iirs') -> list:
+
+def read_file_paths(file_path: str) -> list:
     """
     Reads file paths from a given text file, one per line.
     
@@ -137,40 +160,31 @@ def read_file_paths(file_path: str, instrument: str='iirs') -> list:
     paths = []
     with open(file_path, 'r') as f:
         for line in f:
-          if line[0] in ('#', '\n'):
+          if line[0] in ('#', '\n'):  # Skip commented lines
               continue
-          line = line.strip()
-          if line.startswith('https://pradan.issdc.gov.in'):
-              line = line.replace('https://pradan.issdc.gov.in', '')
-          elif line.startswith('/ch2/protected/'):
-              pass # already in correct format
-          elif line.startswith('ch2_'): # generate full path from img name
-            if instrument == 'iirs':
-              date = line.split('_')[3][:8]
-              line = f'/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/iir_collection/data/calibrated/{date}/{line}.zip?iirs'
-            else:
-                logging.error(f'Instrument {instrument} not supported, please supply full path starting with "/ch2/protected/".')
-          else:
-            logging.error(f'Unsupported file path format: {line}')
-          paths.append(line)
+          paths.append(img2url(line.strip()))
     return paths
 
 
 if __name__ == "__main__":
+  lil_test = '/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/cla_collection/cla/data/calibrated/2023/11/23/ch2_cla_l1_20231123T231214771_20231123T231220147.fits?class'
   logging.basicConfig(level=logging.DEBUG, filename='issdc.log', filemode='a', format="%(asctime)s [%(levelname)s] %(message)s",)
 
   # Parse file paths from first cmd line arg
   if len(sys.argv) > 1:
      file_paths = read_file_paths(sys.argv[1])
-     logging.info(f'Got {len(file_paths)} file paths from {sys.argv[1]}.')  
+     logging.info(f'Got {len(file_paths)} file paths from {sys.argv[1]}.') 
+     file_paths.insert(0, lil_test) 
   else:
     file_paths = [
-      # Lil files all good
-      '/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/cla_collection/cla/data/calibrated/2023/11/23/ch2_cla_l1_20231123T231214771_20231123T231220147.fits?class',
-    
-      # Mid file (25-100 MB) all good
-      # '/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/xsm_collection/auto/2024/ch2_xsm_20240428_v1.zip?xsm',
+      lil_test,
+      'ch2_iir_nci_20210114T0850572382_d_img_d32',
+      'ch2_iir_nci_20210121T1736358438_d_img_d32',
+      'ch2_iir_nci_20210719T1226376950_d_img_d32',
+      'ch2_iir_nci_20210719T1424374912_d_img_d32',
+      'ch2_iir_nci_20210719T1622353775_d_img_d32'
       ]
+    file_paths = [img2url(img) for img in file_paths]
   
   logging.info(f'Starting ISSDC download script...')
   ISSDC_USERNAME = os.getenv('ISSDC_USERNAME')
@@ -178,10 +192,10 @@ if __name__ == "__main__":
 
   # NOTE: If you just want to type your password in for testing, make sure you use a raw string so you don't need to escape it
   creds = ISSDCRequester(username=ISSDC_USERNAME, password=ISSDC_PASSWORD)
-
-
   data_dir = './data'
   pathlib.Path(data_dir).mkdir(parents=True, exist_ok=True)
+
+  # TODO: launch initial request with retry logic or early exit? sometimes hangs with no response
 
   for file_path in file_paths:
     file_url = f'{BASE_URL}{file_path}'
