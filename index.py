@@ -1,12 +1,12 @@
 import os
 import sys
-import pathlib
 import time
 import logging
 import functools
+from pathlib import Path
 from http import HTTPStatus
 from http.client import IncompleteRead
-from requests.exceptions import HTTPError, ChunkedEncodingError
+from requests.exceptions import HTTPError, ChunkedEncodingError, ConnectionError
 from dotenv import load_dotenv
 from issdc import ISSDCRequester, BASE_URL
 from tqdm import tqdm
@@ -59,7 +59,7 @@ def retry_http(retries, retry_sleep_sec, retry_http_codes):
                   if err.response.status_code not in retry_http_codes:
                       logging.error(f"Unexpected HTTPError {err.response.status_code}, handle or add to retry_http_codes.")
                       # raise err  # TODO: raise unexpected http errors?
-              except (IncompleteRead, ChunkedEncodingError) as err:
+              except (IncompleteRead, ChunkedEncodingError, ConnectionError) as err:
                   # logging.debug(err, exc_info=True)  # Connection Broken (IncompleteRead->ProtocolError->ChunkedEncodingError)
                   logging.error('Lost connection to server.')
                   attempt -= 1
@@ -83,8 +83,8 @@ def _download(session, file_url, data_dir, total_size, byte_range_support, block
   If byte_range_support, allows resuming downloads. The file's total_size in 
   bytes is needed (e.g. response headers['content-length'])
   """
-  file_name = os.path.basename(file_url).split('?')[0]
-  fp = f'{data_dir}/{file_name}'
+  file_name = Path(file_url).name.split('?')[0]
+  fp = Path(data_dir) / file_name
   open_mode = 'ab' if byte_range_support else 'wb'
   with open(fp, open_mode) as f:
     pos = f.tell()
@@ -141,10 +141,10 @@ def img2url(img_name: str) -> str:
       img_url = img_url.replace('https://pradan.issdc.gov.in', '')
   elif img_url.startswith('/ch2/protected/'):
       pass # already in correct format
-  elif img_url.startswith('ch2_iir'): # generate full path from img name
+  elif img_url.lstrip('/').startswith('ch2_iir'): # generate full path from img name
     date = img_url.split('_')[3][:8]
     pre = '/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/iir_collection/data/calibrated/'
-    img_url = pre + f'{date}/{img_url}.zip?iirs'
+    img_url = Path(pre) / date / f'{img_url}.zip?iirs'
   else:
     logging.error(f'Unsupported file path format: {img_url}')
   return img_url
@@ -174,7 +174,7 @@ if __name__ == "__main__":
   if len(sys.argv) > 1:
      file_paths = read_file_paths(sys.argv[1])
      logging.info(f'Got {len(file_paths)} file paths from {sys.argv[1]}.') 
-     file_paths.insert(0, lil_test) 
+    #  file_paths.insert(0, lil_test) 
   else:
     file_paths = [
       lil_test,
@@ -186,16 +186,17 @@ if __name__ == "__main__":
       ]
     file_paths = [img2url(img) for img in file_paths]
   
+  data_dir = sys.argv[2] if len(sys.argv) > 2 else './data'
+
   logging.info(f'Starting ISSDC download script...')
   ISSDC_USERNAME = os.getenv('ISSDC_USERNAME')
   ISSDC_PASSWORD = os.getenv('ISSDC_PASSWORD')
 
   # NOTE: If you just want to type your password in for testing, make sure you use a raw string so you don't need to escape it
   creds = ISSDCRequester(username=ISSDC_USERNAME, password=ISSDC_PASSWORD)
-  data_dir = './data'
-  pathlib.Path(data_dir).mkdir(parents=True, exist_ok=True)
+  Path(data_dir).mkdir(parents=True, exist_ok=True)
 
-  # TODO: launch initial request with retry logic or early exit? sometimes hangs with no response
+  # TODO: better error message for when server is down (ConnectionError, no response)
 
   for file_path in file_paths:
     file_url = f'{BASE_URL}{file_path}'
