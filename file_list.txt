@@ -1,0 +1,2 @@
+/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/cla_collection/cla/data/calibrated/2024/11/30/ch2_cla_l1_20241130T233743748_20241130T233747523.fits?class
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/xsm_collection/auto/2025/ch2_xsm_20250308_v1.zip?xsm
