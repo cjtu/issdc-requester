@@ -571,29 +571,100 @@ def test_short_list_download():
                 assert fpath.stat().st_size == expected_size, f"Size mismatch for {fname}: expected {expected_size}, got {fpath.stat().st_size}"
         
 
+def _check_file_exists(session, file_url: str, out_dir: str = None) -> tuple[bool, int]:
+    """
+    Check if a file exists on server and if it needs downloading.
+
+    Args:
+        session: ISSDCRequester session.
+        file_url: Full URL to check.
+        out_dir: Local directory to check for existing files.
+
+    Returns:
+        Tuple of (exists_on_server, needs_download).
+        needs_download is the remote size if download needed, 0 if already local, -1 if not on server.
+    """
+    resp = session.request("HEAD", file_url)
+    if resp.status_code == 405:
+        resp = session.request("GET", file_url, stream=True)
+        resp.close()
+
+    if resp.status_code != 200:
+        return False, -1
+
+    remote_size = int(resp.headers.get("content-length", 0))
+
+    if out_dir:
+        file_name = Path(file_url).name.split("?")[0]
+        local_path = Path(out_dir) / file_name
+        if local_path.exists() and local_path.stat().st_size >= remote_size:
+            return True, 0
+
+    return True, remote_size
+
+
+def check_files_exist(file_paths, out_dir: str = "./data", verbose: int = 2, logfile: str = ".issdc.log") -> None:
+    """
+    Check if files exist on the ISSDC server without downloading.
+
+    Args:
+        file_paths: Input file paths (str, Path, or list).
+        out_dir: Local directory to check for existing files.
+        verbose: Verbosity level for logging (0-3).
+        logfile: Log file name.
+    """
+    logging.basicConfig(
+        level=LOGLVL.get(verbose, logging.NOTSET),
+        filename=logfile,
+        filemode="a",
+        format="%(asctime)s [%(levelname)s] %(message)s",
+    )
+
+    if isinstance(file_paths, (str, Path)):
+        file_paths = read_file_paths(file_paths)
+    elif isinstance(file_paths, list):
+        file_paths = [img2url(img) for img in file_paths]
+
+    found = 0
+    missing_files = []
+    to_download_count = 0
+    total_download_size = 0
+
+    with ISSDCRequester(username=ISSDC_USERNAME, password=ISSDC_PASSWORD) as session:
+        for file_url in file_paths:
+            exists, needs = _check_file_exists(session, file_url, out_dir)
+            if exists:
+                found += 1
+                if needs > 0:
+                    to_download_count += 1
+                    total_download_size += needs
+            else:
+                file_name = Path(file_url).name.split("?")[0]
+                missing_files.append(file_name)
+
+    print(f"Found: {found}/{len(file_paths)} files on server")
+    
+    if missing_files:
+        print("Not found on server:")
+        for fname in missing_files:
+            print(f"  {fname}")
+    
+    size_gb = total_download_size / (1024 ** 3)
+    print(f"To download: {to_download_count} files (Size: {size_gb:.3f} GB)")
+
+
 def test_other_downloads_exist():
     """Iterate through all OTHER_DOWNLOADS files and verify the urls still exist."""
     urls = read_file_paths(OTHER_DOWNLOADS)
-    stale_urls = []
+    found = 0
+
     with ISSDCRequester(ISSDC_USERNAME, ISSDC_PASSWORD) as session:
         for url in urls:
-            try:
-                # Using HEAD to check existence without downloading
-                resp = session.request("HEAD", url)
-                # Some servers might return 405 Method Not Allowed for HEAD, fallback to GET with stream=True
-                if resp.status_code == 405:
-                    resp = session.request("GET", url, stream=True)
-                    resp.close()
-                
-                if resp.status_code != 200:
-                    stale_urls.append((url, f"Status {resp.status_code}"))
-            except Exception as e:
-                stale_urls.append((url, str(e)))
-    print(f"Results: {len(urls) - len(stale_urls)}/{len(urls)} URLs are valid")
-    if stale_urls:
-        for url, reason in stale_urls:
-            print(f"  - {url}")
-            print(f"    Reason: {reason}")
+            exists, _ = _check_file_exists(session, url)
+            if exists:
+                found += 1
+
+    print(f"Found: {found}/{len(urls)} URLs valid")
     
 
 def read_file_paths(file_path: str) -> list:
@@ -669,6 +740,11 @@ def main_cli():
         type=str,
         help="Get all other downloads for this instrument from PRADAN (options: class,xsm,iirs,sar,ohrc,tmc2,chace2,dfrs,spice)."
     )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Check if files exist on the server without downloading."
+    )
     # Parse arguments
     args = parser.parse_args()
 
@@ -676,18 +752,23 @@ def main_cli():
         test_short_list_download()
     elif args.od_exist:
         test_other_downloads_exist()
+    # Other Downloads by instrument    
     elif args.instrument_od:
         files = get_other_downloads(args.instrument_od)
-        if files:
-            main(files, args.out_dir, args.verbose, args.logfile)
-        else:
+        if not files:
             print(f"No files matched instrument '{args.instrument_od}'.")
+        if args.dry_run:
+            check_files_exist(files, args.out_dir, args.verbose, args.logfile)
+        else:
+            main(files, args.out_dir, args.verbose, args.logfile)
+    # Main data downloader
     else:
-        # Run main function with parsed arguments
         if not args.file_list:
             parser.error("Please supply name of text file with PRADAN file paths. See --help for details.")
-        
-        main(args.file_list, args.out_dir, args.verbose, args.logfile)
+        if args.dry_run:
+            check_files_exist(args.file_list, args.out_dir, args.verbose, args.logfile)
+        else:
+            main(args.file_list, args.out_dir, args.verbose, args.logfile)
 
 
 if __name__ == "__main__":

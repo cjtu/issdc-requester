@@ -1,2 +1,4 @@
 https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/xsm_collection/auto/2025/ch2_xsm_20250308_v1.zip?xsm
 https://pradan.issdc.gov.in/ch2/protected/downloadFile/common_pds4structure/isda_mission_bundle.zip
+ch2_sar_ncls_20200305t114902885_d_cp_d18
+ch2_tmc_nra_20191015T1021251544_d_img_d18
