@@ -1,0 +1,46 @@
+# Viper Landing Site (Query: 30.5-32.5E, 85.3-85.5S)
+# Search by AOI at https://chmapbrowse.issdc.gov.in/MapBrowse/ 
+#  2024-04-11: returns following 25 results 
+
+# IIRS Metadata
+# https://pradan.issdc.gov.in/ch2/protected/downloadFile/iirs/iir.zip
+# https://pradan.issdc.gov.in/ch2/protected/downloadFile/iirs/ch2_iirs_pds_dp_archive_sis.pdf
+# https://pradan.issdc.gov.in/ch2/protected/downloadFile/iirs/LTA_Assembly_Procedure_iirs.txt
+# https://pradan.issdc.gov.in/ch2/protected/downloadFile/iirs/IIRS_ShapeFiles.zip
+# https://pradan.issdc.gov.in/ch2/protected/downloadFile/iirs/Chandrayaan-2_IIRS_PDS4_Data_Products_Users_Guide.pdf
+
+# Batch 2 (Nov 1, 2024)
+ch2_iir_nci_20210719T1622353775_d_img_d32
+
+# Batch 3 (Nov 4, 2024)
+ch2_iir_nci_20201226T1745264921_d_img_d32
+ch2_iir_nci_20210122T0920157625_d_img_d32
+ch2_iir_nci_20210622T1256344234_d_img_d32
+ch2_iir_nci_20210622T1454378054_d_img_d32
+ch2_iir_nci_20210622T1652404445_d_img_d32
+ch2_iir_nci_20210622T1850441449_d_img_d32
+
+
+# North Pole (issdc query error)
+# ch2_iir_nci_20210113T0916033995_d_img_d32
+# ch2_iir_nci_20210114T0257131519_d_img_d32
+# ch2_iir_nci_20210114T0653018270_d_img_d32
+# ch2_iir_nci_20210114T0455066826_d_img_d32
+# ch2_iir_nci_20210613T0351224055_d_img_d32
+# ch2_iir_nci_20210613T0549249272_d_img_d32
+# ch2_iir_nci_20210613T0747266520_d_img_d32
+# ch2_iir_nci_20210613T1143316410_d_img_d32
+# ch2_iir_nci_20210613T1540537788_d_img_hw1
+# ch2_iir_nci_20230121T0913585999_d_img_d32
+# ch2_iir_nci_20230525T0637073507_d_img_d32
+# ch2_iir_nci_20231117T0935132951_d_img_d18
+
+# Excluded (covers ~half of AOI)
+# ch2_iir_nci_20210122T1316107252_d_img_d32
+# ch2_iir_nci_20210121T1736358438_d_img_d32
+# ch2_iir_nci_20210719T1424374912_d_img_d32
+
+# Excluded (grazes the edge of AOI)
+# ch2_iir_nci_20210113T0718091061_d_img_d32
+# ch2_iir_nci_20210121T1538396938_d_img_d32
+# ch2_iir_nci_20210122T1514078307_d_img_d32

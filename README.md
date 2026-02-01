@@ -4,28 +4,24 @@
 
 ## Installation
 
-1. Clone the repository:
-    ```sh
-    git clone https://github.com/yourusername/issdc-requester.git
-    cd issdc-requester
-    ```
+Install directly from GitHub:
 
-2. Install the required packages, `requests` and `tqdm` (optional, for progress bars):
-    ```sh
-    pip install requests tqdm
-    ```
+```sh
+pip install git+https://github.com/cjtu/issdc-requester.git
+```
 
-3. Create a `.env` file with your ISSDC credentials:
-    ```
-    ISSDC_USERNAME=user@email.com
-    ISSDC_PASSWORD=password
-    ```
+Create a `.env` file with your ISSDC credentials:
+
+```
+ISSDC_USERNAME=user@email.com
+ISSDC_PASSWORD=password
+```
 
 ## Test installation and env
 
 ```sh
-python issdc.py --help
-python issdc.py --test
+issdc --help
+issdc --test
 ```
 
 ## Usage Example
@@ -33,7 +29,7 @@ python issdc.py --test
 To use the CLI, provide a text file containing the list of the urls from PRADAN to download, one per line.
 
 ```sh
-python issdc.py file_list.txt -o ./data
+issdc file_list.txt -o ./data
 ```
 
 Where `file_list.txt` contains files like:

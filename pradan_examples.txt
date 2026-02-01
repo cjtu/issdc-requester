@@ -1,0 +1,145 @@
+# CH2 
+## CLASS
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/cla_collection/cla/data/calibrated/2019/09/13/ch2_cla_l1_20190913T065629048_20190913T065637048.fits?class
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/cla_collection/cla/data/calibrated/2025/12/30/ch2_cla_l1_20251230T083606705_20251230T083611169.fits?class
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/cla_collection/cla/data/derived/Al-Si/ch2_cla_l1-5_map_al-si_combined_v1.tif?class
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/cla_collection/cla/data/derived/Mg-Al/ch2_cla_l1-5_map_mg-al_combined_v1.tif?class
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/cla_collection/cla/data/derived/Si/ch2_cla_l2_map_si_v2.tif?class
+
+## XSM
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/xsm_collection//ch2_xsm_20190912_v1.zip?xsm
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/xsm_collection//ch2_xsm_20200101_v1.zip?xsm
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/xsm_collection/22Sep2021/ch2_xsm_20201007_v1.zip?xsm
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/xsm_collection/23Feb2022/ch2_xsm_20210807_v1.zip?xsm
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/xsm_collection/auto/2024/ch2_xsm_20240824_v1.zip?xsm
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/xsm_collection/auto/2025/ch2_xsm_20251001_v1.zip?xsm
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/xsm_collection/auto/2026/ch2_xsm_20260115_v1.zip?xsm
+
+## IIRS
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/iir_collection/data/calibrated/20191202/ch2_iir_nci_20191202T0639493114_d_img_d18.zip?iirs
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/iir_collection/data/calibrated/20191205/ch2_iir_nci_20191205T1333369198_d_img_m65.zip?iirs
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/iir_collection/data/raw/20250902/ch2_iir_nri_20250902T1355404541_d_img_d18.zip?iirs
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/iir_collection/data/calibrated/20210115/ch2_iir_nci_20210115T1023566996_d_img_d32.zip?iirs
+
+## CHACE
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/cha_collection//ch2_cha_20190914153735792.zip?chace2
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/cha_collection/2023/11/16/ch2_cha_20190914153735792_L1a.zip?chace2
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/cha_collection/2026/01/23/ch2_cha_20251231232437057_L1a.zip?chace2
+
+## DFRS
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/frs_collection/20Dec2022/CH2O_08832_DFRS_DS95_2021_230_12_52_12.zip?dfrs
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/frs_collection/20Dec2022/CH2O_08846_DFRS_DS95_2021_231_09_09.zip?dfrs
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/frs_collection//ch2o_01972_dfrs_ds95_2020_033_14_31.zip?dfrs
+
+## DFSAR
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/sar_collection/data/calibrated/20200305/ch2_sar_ncls_20200305t114902885_d_cp_d18.zip?sar
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/sar_collection/data/calibrated/20200317/ch2_sar_ncls_20200317t233257583_d_fp_d18.zip?sar
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/sar_collection/data/raw/20200225/ch2_sar_nrxs_20200225t085353645_d_fp_d18.zip?sar
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/sar_collection/data/calibrated/20220912/ch2_sar_ncxl_20220912t234150489_d_fp_d32.zip?sar
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/sar_collection/data/raw/20251106/ch2_sar_nrxl_20251106t221014810_d_cp_d18.zip?sar
+
+## TMC-2
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/tmc_collection/data/raw/20191015/ch2_tmc_nra_20191015T1021251544_d_img_d18.zip?tmc2
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/tmc_collection/data/calibrated/20260114/ch2_tmc_nca_20260114T1652146870_d_img_d18.zip?tmc2
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/tmc_collection/data/derived/20230120/ch2_tmc_ndn_20230120T0320195248_d_dtm_d32.zip?tmc2
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/tmc_collection/data/derived/20210529/ch2_tmc_ndn_20210529T1718083910_d_dtm_d18.zip?tmc2
+
+## OHRC
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/ohr_collection/data/raw/20220321/ch2_ohr_nrp_20220321T0525382085_d_img_hw1.zip?ohrc
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/ohr_collection/data/raw/20251109/ch2_ohr_nrp_20251109T1108358496_d_img_d18.zip?ohrc
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/ohr_collection/data/calibrated/20251109/ch2_ohr_ncp_20251109T1504259978_d_img_d18.zip?ohrc
+
+## SPICE
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/spice/spice_kernels/ck/ch2_att_01Sep2019_02Oct2019_v1.bc?spice
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/spice/spice_kernels/spk/ch2_eph_27Feb2024_02Apr2024_v1.bsp?spice
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/spice/spice_kernels/ik/ch2_iir_v01.ti?spice
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/spice/spice_kernels/ik/ch2_ohr_v01.ti?spice
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/spice/spice_kernels/sclk/ch2_sclk_v1.tsc?spice
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/spice/spice_kernels/fk/ch2_v01.tf?spice
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/spice/spice_kernels/spk/de430s.bsp?spice
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/spice/spice_kernels/lsk/naif0012.tls?spice
+https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/spice/spice_kernels/pck/pck00010.tpc?spice
+
+## Other Downloads
+### Common PDS4 LTA Structure
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/common_pds4structure/isda_mission_bundle.zip
+
+### Common Documents
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/common_docs/hand_book_-_payloads_data_and_science.pdf
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/common_docs/payloads_dataproducts.pdf
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/common_docs/science_results_from_ch-2.pdf
+
+### CLASS
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/class_holder/ch2_cla_l1_2019_12.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/class_holder/ch2_cla_l1_2021_01.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/class_holder/ch2_class_x2abund_lmodel_v1.0.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/class_holder/ch2_cla_l1_2025_12.zip
+
+#### Zip file containing latest version of calibration files, documents and software
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/class/ch2_class_pds_release_53_20260129.zip
+
+### XSM
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/xsm/ch2_xsm_data_analysis_guide.pdf
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/xsm/ch2_xsm_dp_archive_sis.pdf
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/xsm/ch2_xsmdas_20251121_v1.5.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/xsm/ch2_xsm_caldb_20251111.zip
+
+#### Zip file with all documents
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/xsm/ch2_xsm_lta_20210628_v2.zip
+
+### IIRS
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/iirs/ch2_iirs_pds_dp_archive_sis.pdf
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/iirs/iir.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/iirs/LTA_Assembly_Procedure_iirs.txt
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/iirs/IIRS_ShapeFiles.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/iirs/Chandrayaan-2_IIRS_PDS4_Data_Products_Users_Guide.pdf
+
+### SAR
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/sar/MidasV2PublishWindows.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/sar/sarlta_v0.tar
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/sar/sar_readme.txt
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/sar/ch2_dfsar_user_manual_v1.0.pdf
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/sar/ch2_sar_pds_dp_archive_sis_v1.3.pdf
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/sar/SAR_ShapeFiles.tgz
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/sar/DFSAR_Water_Ice.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/sar/ch2_sar_der_mosaic_np.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/sar/ch2_sar_der_mosaic_sp.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/sar/ch2_sar_pds_dp_archive_sis_v1.4.pdf
+
+### OHRC
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/ohrc/ch2_ohrc_data_products_user_guide.pdf
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/ohrc/OHRC_ShapeFiles.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/ohrc/ohr.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/ohrc/LTA_Assembly_Procedure.txt
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/ohrc/ch2_ohrc_pds_dp_archive_sis.pdf
+
+### TMC-2
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/tmc2/tmc.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/tmc2/ch2_tmc2_data_products_user_guide.pdf
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/tmc2/LTA_Assembly_Procedure.txt
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/tmc2/TMC2_ShapeFiles.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/tmc2/geometry_calibrated_2019_2020.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/tmc2/geometry_calibrated_2021.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/tmc2/geometry_calibrated_2022.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/tmc2/browse_raw_2019.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/tmc2/browse_raw_2020.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/tmc2/browse_raw_2021.zip
+
+### CHACE-2
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/chace2/CHACE2_LTA.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/chace2/CHACE2_readme.pdf
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/chace2/CHACE2_User_manual.pdf
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/chace2/Calibration_document_CHACE-2_April2018_version0.pdf
+
+
+### DFRS
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/dfrs/bundle_frs.xml
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/dfrs/ch2_frs_technical_document.pdf
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/dfrs/ch2o_dfrs_documents.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/dfrs/ch2o_dfrs_spice.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/dfrs/collection_data_inventory.csv
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/dfrs/collection_data_inventory.xml
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/dfrs/readme_level0.txt
+
+### SPICE
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/spice/ch2_spice_archive_user_manual.pdf

@@ -612,7 +612,7 @@ def read_file_paths(file_path: str) -> list:
     return paths
 
 
-if __name__ == "__main__":
+def main_cli():
     ## DEBUG ##
     # main(['/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/cla_collection/cla/data/calibrated/2024/11/30/ch2_cla_l1_20241130T233743748_20241130T233747523.fits?class'], verbose=3)
     # quit()
@@ -688,3 +688,7 @@ if __name__ == "__main__":
             parser.error("Please supply name of text file with PRADAN file paths. See --help for details.")
         
         main(args.file_list, args.out_dir, args.verbose, args.logfile)
+
+
+if __name__ == "__main__":
+    main_cli()
