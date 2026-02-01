@@ -1,6 +1,6 @@
 [project]
 name = "issdc"
-version = "0.1.0"
+version = "0.2.0"
 description = "ISSDC Pradan Downloader"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -19,8 +19,8 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = ""
-Issues = ""
+Repository = "https://github.com/cjtu/issdc-requester"
+Issues = "https://github.com/cjtu/issdc-requester/issues"
 
 [project.scripts]
 issdc = "issdc:main_cli"
