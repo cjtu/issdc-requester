@@ -1,0 +1,83 @@
+## Other Downloads
+### Common PDS4 LTA Structure
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/common_pds4structure/isda_mission_bundle.zip
+
+### Common Documents
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/common_docs/hand_book_-_payloads_data_and_science.pdf
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/common_docs/payloads_dataproducts.pdf
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/common_docs/science_results_from_ch-2.pdf
+
+### CLASS
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/class_holder/ch2_cla_l1_2019_12.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/class_holder/ch2_cla_l1_2021_01.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/class_holder/ch2_class_x2abund_lmodel_v1.0.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/class_holder/ch2_cla_l1_2025_12.zip
+
+#### Zip file containing latest version of calibration files, documents and software
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/class/ch2_class_pds_release_53_20260129.zip
+
+### XSM
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/xsm/ch2_xsm_data_analysis_guide.pdf
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/xsm/ch2_xsm_dp_archive_sis.pdf
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/xsm/ch2_xsmdas_20251121_v1.5.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/xsm/ch2_xsm_caldb_20251111.zip
+
+#### Zip file with all documents
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/xsm/ch2_xsm_lta_20210628_v2.zip
+
+### IIRS
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/iirs/ch2_iirs_pds_dp_archive_sis.pdf
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/iirs/iir.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/iirs/LTA_Assembly_Procedure_iirs.txt
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/iirs/IIRS_ShapeFiles.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/iirs/Chandrayaan-2_IIRS_PDS4_Data_Products_Users_Guide.pdf
+
+### SAR
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/sar/MidasV2PublishWindows.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/sar/sarlta_v0.tar
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/sar/sar_readme.txt
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/sar/ch2_dfsar_user_manual_v1.0.pdf
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/sar/ch2_sar_pds_dp_archive_sis_v1.3.pdf
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/sar/SAR_ShapeFiles.tgz
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/sar/DFSAR_Water_Ice.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/sar/ch2_sar_der_mosaic_np.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/sar/ch2_sar_der_mosaic_sp.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/sar/ch2_sar_pds_dp_archive_sis_v1.4.pdf
+
+### OHRC
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/ohrc/ch2_ohrc_data_products_user_guide.pdf
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/ohrc/OHRC_ShapeFiles.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/ohrc/ohr.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/ohrc/LTA_Assembly_Procedure.txt
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/ohrc/ch2_ohrc_pds_dp_archive_sis.pdf
+
+### TMC-2
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/tmc2/tmc.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/tmc2/ch2_tmc2_data_products_user_guide.pdf
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/tmc2/LTA_Assembly_Procedure.txt
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/tmc2/TMC2_ShapeFiles.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/tmc2/geometry_calibrated_2019_2020.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/tmc2/geometry_calibrated_2021.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/tmc2/geometry_calibrated_2022.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/tmc2/browse_raw_2019.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/tmc2/browse_raw_2020.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/tmc2/browse_raw_2021.zip
+
+### CHACE-2
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/chace2/CHACE2_LTA.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/chace2/CHACE2_readme.pdf
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/chace2/CHACE2_User_manual.pdf
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/chace2/Calibration_document_CHACE-2_April2018_version0.pdf
+
+
+### DFRS
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/dfrs/bundle_frs.xml
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/dfrs/ch2_frs_technical_document.pdf
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/dfrs/ch2o_dfrs_documents.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/dfrs/ch2o_dfrs_spice.zip
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/dfrs/collection_data_inventory.csv
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/dfrs/collection_data_inventory.xml
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/dfrs/readme_level0.txt
+
+### SPICE
+https://pradan.issdc.gov.in/ch2/protected/downloadFile/spice/ch2_spice_archive_user_manual.pdf
