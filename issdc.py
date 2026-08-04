@@ -46,6 +46,18 @@ RETRY_HTTP_CODES = [
 ]
 LOGLVL = {3: logging.DEBUG, 2: logging.INFO, 1: logging.ERROR}
 
+# IIRS level code (3rd underscore-separated field of the file name) -> PRADAN data directory.
+CH2_IIR_LEVELS = {"nri": "raw", "nci": "calibrated", "ndi": "derived"}
+
+
+def ch2_iir_level(img_url):
+    """Return the PRADAN data directory for an IIRS file name, by its level code."""
+    code = img_url.split("_")[2]
+    if code not in CH2_IIR_LEVELS:
+        raise ValueError(f"Unknown IIRS level code '{code}', expected one of {sorted(CH2_IIR_LEVELS)}")
+    return CH2_IIR_LEVELS[code]
+
+
 # Instrument path config for inferring full PRADAN paths from file names.
 INSTRUMENT_CONFIG = {
     "ch2_cla": {
@@ -60,7 +72,7 @@ INSTRUMENT_CONFIG = {
         "query": "iirs",
         "date_idx": 3,
         "date_fmt_path": "%Y%m%d",
-        "level_map": lambda x: "raw" if "nri" in x else "calibrated",
+        "level_map": ch2_iir_level,
         "ext": ".zip",
     },
     "ch2_sar": {
@@ -537,11 +549,14 @@ def img2url(img_name: str) -> str:
                 query = config["query"]
                 ext = config.get("ext", "")
                 
-                # Append extension if missing (checking against common extensions to avoid double extension)
-                if not any(img_url.lower().endswith(xx) for xx in [".zip", ".fits", ".tif", ".xml", ".pdf", ".txt", ".lbl", ".fmt", ".csv", ".tab"]):
-                    img_url += ext
+                # Drop any query the caller already supplied, else it is duplicated below
+                file_name = img_url.split("?")[0]
 
-                return f"{BASE_URL}/{base}/{date_path}/{img_url}?{query}"
+                # Append extension if missing (checking against common extensions to avoid double extension)
+                if not any(file_name.lower().endswith(xx) for xx in [".zip", ".fits", ".tif", ".xml", ".pdf", ".txt", ".lbl", ".fmt", ".csv", ".tab"]):
+                    file_name += ext
+
+                return f"{BASE_URL}/{base}/{date_path}/{file_name}?{query}"
             except (IndexError, ValueError) as e:
                 logging.debug(f"Failed to parse {img_url} with config {prefix}: {e}")
                 # Continue to next check or fail
