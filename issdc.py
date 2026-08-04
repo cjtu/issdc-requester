@@ -1,18 +1,18 @@
+import argparse
 import functools
+import http
 import logging
 import os
 import re
 import sys
 import threading
 import time
-import http
 from http.client import IncompleteRead
 from pathlib import Path
 
 import requests
 from requests.exceptions import ChunkedEncodingError, ConnectionError, HTTPError
 from tqdm import tqdm
-import argparse
 
 # Load ISSDC_USERNAME and ISSDC_PASSWORD from the file ".env" with contents:
 #  ISSDC_USERNAME=user@email.com
@@ -26,9 +26,9 @@ if env_path.exists():
             elif line.startswith("ISSDC_PASSWORD"):
                 ISSDC_PASSWORD = line.strip().split("=")[1]
 else:
-    raise FileNotFoundError(
-        "The .env file is missing. Please make a .env file with ISSDC_USERNAME and ISSDC_PASSWORD."
-    )
+    # Not fatal at import: img2url and the offline index need no credentials. ISSDCRequester
+    # raises when something actually tries to authenticate.
+    ISSDC_USERNAME = ISSDC_PASSWORD = None
 
 # Constants
 BASE_URL = "https://pradan.issdc.gov.in"
@@ -42,7 +42,7 @@ RETRY_HTTP_CODES = [
     http.HTTPStatus.INTERNAL_SERVER_ERROR,
     http.HTTPStatus.BAD_GATEWAY,
     http.HTTPStatus.SERVICE_UNAVAILABLE,
-    http.HTTPStatus.GATEWAY_TIMEOUT
+    http.HTTPStatus.GATEWAY_TIMEOUT,
 ]
 LOGLVL = {3: logging.DEBUG, 2: logging.INFO, 1: logging.ERROR}
 
@@ -88,9 +88,7 @@ INSTRUMENT_CONFIG = {
         "query": "tmc2",
         "date_idx": 3,
         "date_fmt_path": "%Y%m%d",
-        "level_map": lambda x: "derived"
-        if "ndn" in x
-        else ("raw" if "nra" in x else "calibrated"),
+        "level_map": lambda x: "derived" if "ndn" in x else ("raw" if "nra" in x else "calibrated"),
         "ext": ".zip",
     },
     "ch2_ohr": {
@@ -112,7 +110,7 @@ TEST_FILES = [
     # CLASS .fits (L1 file)
     "https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/cla_collection/cla/data/calibrated/2019/09/13/ch2_cla_l1_20190913T065629048_20190913T065637048.fits?class",
 ]
-OTHER_DOWNLOADS = 'other_downloads.txt'
+OTHER_DOWNLOADS = "other_downloads.txt"
 
 # Instrument mapping for Other Downloads
 OD_INSTRUMENT_MAP = {
@@ -126,6 +124,7 @@ OD_INSTRUMENT_MAP = {
     "dfrs": "dfrs/",
     "spice": "spice/",
 }
+
 
 # Decorators
 def retry_http(retries, retry_sleep_sec, retry_http_codes):
@@ -166,13 +165,15 @@ def retry_http(retries, retry_sleep_sec, retry_http_codes):
                             f"Unexpected HTTPError {err.response.status_code}, handle or add to retry_http_codes."
                         )
                         # raise err  # TODO: raise unexpected http errors?
-                except (IncompleteRead, ChunkedEncodingError, ConnectionError) as err:
+                except (IncompleteRead, ChunkedEncodingError, ConnectionError):
                     # logging.debug(err, exc_info=True)  # Connection Broken (IncompleteRead->ProtocolError->ChunkedEncodingError)
                     logging.debug("Lost connection to server.")
                     reconnects += 1
-                    if reconnects >= 2*retries:
-                        logging.error(f"Connection failed after {reconnects} dropped connects.")
-                        raise RuntimeError(f"Exceeded max connection retries. Please check internet connection and try again to resume your download.")
+                    if reconnects >= 2 * retries:
+                        logging.exception(f"Connection failed after {reconnects} dropped connects.")
+                        raise RuntimeError(
+                            "Exceeded max connection retries. Please check internet connection and try again to resume your download."
+                        )
                 except Exception as err:
                     logging.error(err, exc_info=True)
                 attempt += 1
@@ -184,6 +185,7 @@ def retry_http(retries, retry_sleep_sec, retry_http_codes):
         return wrapper
 
     return decorator
+
 
 # Classes
 class ISSDCRequester:
@@ -203,6 +205,7 @@ class ISSDCRequester:
       request(method, url, **kwargs): Perform a request with the given method and URL.
       close(): Close the current session and clear authentication data.
     """
+
     def __init__(self, username, password, keep_alive_interval=600):
         """
         Initializes the ISSDC requester with the given credentials and settings.
@@ -211,6 +214,10 @@ class ISSDCRequester:
           password (str): The password for authentication.
           keep_alive_interval (int, optional): The interval in seconds to keep the session alive. Defaults to 600.
         """
+        if not username or not password:
+            raise FileNotFoundError(
+                "Missing ISSDC credentials. Please make a .env file with ISSDC_USERNAME and ISSDC_PASSWORD."
+            )
         self.username = username
         self.password = password
         self.request_session = None
@@ -220,7 +227,7 @@ class ISSDCRequester:
     def __enter__(self):
         """Context manager entry."""
         return self
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager exit - ensures cleanup."""
         self.close()
@@ -241,16 +248,12 @@ class ISSDCRequester:
         self.request_session = requests.session()
 
         headers = {"User-Agent": "Mozilla/5.0"}
-        payload_visit_res = self.request_session.get(
-            PAYLOAD_VISIT_URL, headers=headers, allow_redirects=True
-        )
+        payload_visit_res = self.request_session.get(PAYLOAD_VISIT_URL, headers=headers, allow_redirects=True)
 
         logging.debug(f"Payload visit status: {payload_visit_res.status_code}")
         # TODO: better error message for when server is down (ConnectionError, no response)
 
-        auth_url_regex = re.compile(
-            '<form.*action="(https://idp\\.issdc\\.gov\\.in/auth.*?)"'
-        )
+        auth_url_regex = re.compile('<form.*action="(https://idp\\.issdc\\.gov\\.in/auth.*?)"')
         auth_url_match = auth_url_regex.search(payload_visit_res.text)
         if auth_url_match == None:
             raise Exception("Unable to find auth URL")
@@ -259,9 +262,7 @@ class ISSDCRequester:
         logging.debug(f"Aquired auth URL: {auth_url}")
 
         # Store cookies for next request
-        cookies = requests.utils.cookiejar_from_dict(
-            requests.utils.dict_from_cookiejar(self.request_session.cookies)
-        )
+        cookies = requests.utils.cookiejar_from_dict(requests.utils.dict_from_cookiejar(self.request_session.cookies))
 
         # Refusing the redirect is important here
         # When redirected the server expects your cookie to be set on your non-existent client
@@ -284,9 +285,7 @@ class ISSDCRequester:
         Send the "keep alive" request to the issdc server.
         """
         payload_visit_res = self.request_session.get(PAYLOAD_VISIT_URL)
-        logging.debug(
-            f"Keep alive payload visit status: {payload_visit_res.status_code}"
-        )
+        logging.debug(f"Keep alive payload visit status: {payload_visit_res.status_code}")
 
     def refresh(self):
         """
@@ -385,7 +384,7 @@ def main(file_paths, out_dir="./data", verbose=2, logfile=".issdc.log"):
         file_paths = [img2url(img) for img in file_paths]
 
     # Authenticate
-    logging.info(f"Connecting to PRADAN...")
+    logging.info("Connecting to PRADAN...")
     with ISSDCRequester(username=ISSDC_USERNAME, password=ISSDC_PASSWORD) as creds:
         Path(out_dir).mkdir(parents=True, exist_ok=True)
 
@@ -398,9 +397,7 @@ def main(file_paths, out_dir="./data", verbose=2, logfile=".issdc.log"):
 
 
 @retry_http(RETRIES, RETRY_SLEEP_SEC, RETRY_HTTP_CODES)
-def _download(
-    session, file_url, data_dir, total_size, byte_range_support, block_size=BLOCK_SIZE
-):
+def _download(session, file_url, data_dir, total_size, byte_range_support, block_size=BLOCK_SIZE):
     """
     Download handler with progress bar and resume logic.
 
@@ -427,9 +424,7 @@ def _download(
         with session.request("get", file_url, stream=True, headers=headers) as response:
             response.raise_for_status()  # raise bad html status as HTTPError exception
             if "tqdm" in sys.modules:
-                with tqdm(
-                    desc=file_name, initial=pos, total=total_size, **TQDM_PARAMS
-                ) as pbar:
+                with tqdm(desc=file_name, initial=pos, total=total_size, **TQDM_PARAMS) as pbar:
                     for chunk in response.iter_content(block_size):
                         f.write(chunk)
                         pbar.update(len(chunk))
@@ -494,7 +489,7 @@ def get_other_downloads(instrument: str) -> list:
 
     # Map to search string
     search_str = OD_INSTRUMENT_MAP.get(instrument.lower(), instrument)
-    
+
     # Include all files that match the instrument or are common files
     return [f for f in read_file_paths(OTHER_DOWNLOADS) if search_str in f or "common_" in f]
 
@@ -528,19 +523,19 @@ def img2url(img_name: str) -> str:
         if img_url.startswith(prefix):
             try:
                 parts = img_url.split("?")[0].split("_")
-                
+
                 # Resolve Level
                 level = "calibrated"
                 if "level_map" in config:
                     level = config["level_map"](img_url)
-                
+
                 base = config["base_path"].format(level=level)
 
                 # Resolve Date
                 date_str = parts[config["date_idx"]]
                 # Assuming date_str is like '20190913T...' or just '20190913'
                 date_val = date_str[:8]
-                
+
                 if config["date_fmt_path"] == "%Y/%m/%d":
                     date_path = f"{date_val[:4]}/{date_val[4:6]}/{date_val[6:8]}"
                 else:
@@ -548,12 +543,15 @@ def img2url(img_name: str) -> str:
 
                 query = config["query"]
                 ext = config.get("ext", "")
-                
+
                 # Drop any query the caller already supplied, else it is duplicated below
                 file_name = img_url.split("?")[0]
 
                 # Append extension if missing (checking against common extensions to avoid double extension)
-                if not any(file_name.lower().endswith(xx) for xx in [".zip", ".fits", ".tif", ".xml", ".pdf", ".txt", ".lbl", ".fmt", ".csv", ".tab"]):
+                if not any(
+                    file_name.lower().endswith(xx)
+                    for xx in [".zip", ".fits", ".tif", ".xml", ".pdf", ".txt", ".lbl", ".fmt", ".csv", ".tab"]
+                ):
                     file_name += ext
 
                 return f"{BASE_URL}/{base}/{date_path}/{file_name}?{query}"
@@ -566,25 +564,28 @@ def img2url(img_name: str) -> str:
     # Fall back to requiring full URLs for ambiguous cases (XSM, CHACE, DFRS, SPICE)
     raise ValueError(f"Ambiguous or unrecognized file path '{img_name}'. Please provide the full URL.")
 
+
 def test_short_list_download():
     """Download a short list of known files and verify sizes."""
     import tempfile
-    with ISSDCRequester(ISSDC_USERNAME, ISSDC_PASSWORD) as session:        
-        with tempfile.TemporaryDirectory() as out_dir:
-            for url in TEST_FILES:
-                with session.request("HEAD", url) as resp:
-                    assert resp.status_code == 200, f"HEAD failed for {url}"
-                    expected_size = int(resp.headers.get("content-length", 0))
-                    
-                download(session, url, str(out_dir))
-                
-                # Verify
-                fname = Path(url.split("?")[0]).name
-                fpath = Path(out_dir) / fname
-                
-                assert fpath.exists(), f"File {fpath} not found"
-                assert fpath.stat().st_size == expected_size, f"Size mismatch for {fname}: expected {expected_size}, got {fpath.stat().st_size}"
-        
+
+    with ISSDCRequester(ISSDC_USERNAME, ISSDC_PASSWORD) as session, tempfile.TemporaryDirectory() as out_dir:
+        for url in TEST_FILES:
+            with session.request("HEAD", url) as resp:
+                assert resp.status_code == 200, f"HEAD failed for {url}"
+                expected_size = int(resp.headers.get("content-length", 0))
+
+            download(session, url, str(out_dir))
+
+            # Verify
+            fname = Path(url.split("?")[0]).name
+            fpath = Path(out_dir) / fname
+
+            assert fpath.exists(), f"File {fpath} not found"
+            assert fpath.stat().st_size == expected_size, (
+                f"Size mismatch for {fname}: expected {expected_size}, got {fpath.stat().st_size}"
+            )
+
 
 def _check_file_exists(session, file_url: str, out_dir: str = None) -> tuple[bool, int]:
     """
@@ -658,13 +659,13 @@ def check_files_exist(file_paths, out_dir: str = "./data", verbose: int = 2, log
                 missing_files.append(file_name)
 
     print(f"Found: {found}/{len(file_paths)} files on server")
-    
+
     if missing_files:
         print("Not found on server:")
         for fname in missing_files:
             print(f"  {fname}")
-    
-    size_gb = total_download_size / (1024 ** 3)
+
+    size_gb = total_download_size / (1024**3)
     print(f"To download: {to_download_count} files (Size: {size_gb:.3f} GB)")
 
 
@@ -680,7 +681,7 @@ def test_other_downloads_exist():
                 found += 1
 
     print(f"Found: {found}/{len(urls)} URLs valid")
-    
+
 
 def read_file_paths(file_path: str) -> list:
     """
@@ -690,7 +691,7 @@ def read_file_paths(file_path: str) -> list:
     :return: List of file paths.
     """
     paths = []
-    with open(file_path, "r") as f:
+    with open(file_path) as f:
         for line in f:
             if line[0] in ("#", "\n"):  # Skip commented lines
                 continue
@@ -714,7 +715,7 @@ def main_cli():
     parser.add_argument(
         "file_list",
         type=str,
-        nargs='?',
+        nargs="?",
         help="Text file with PRADAN file paths, one per line. Paths may begin with https://pradan.issdc/ch2/... or /ch2/...",
     )
     parser.add_argument(
@@ -753,12 +754,10 @@ def main_cli():
         "-i",
         "--instrument-od",
         type=str,
-        help="Get all other downloads for this instrument from PRADAN (options: class,xsm,iirs,sar,ohrc,tmc2,chace2,dfrs,spice)."
+        help="Get all other downloads for this instrument from PRADAN (options: class,xsm,iirs,sar,ohrc,tmc2,chace2,dfrs,spice).",
     )
     parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Check if files exist on the server without downloading."
+        "--dry-run", action="store_true", help="Check if files exist on the server without downloading."
     )
     # Parse arguments
     args = parser.parse_args()
@@ -767,7 +766,7 @@ def main_cli():
         test_short_list_download()
     elif args.od_exist:
         test_other_downloads_exist()
-    # Other Downloads by instrument    
+    # Other Downloads by instrument
     elif args.instrument_od:
         files = get_other_downloads(args.instrument_od)
         if not files:
