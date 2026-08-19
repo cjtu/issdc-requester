@@ -1,12 +1,14 @@
 import argparse
 import functools
 import http
+import io
 import logging
 import os
 import re
 import sys
 import threading
 import time
+import zipfile
 from http.client import IncompleteRead
 from pathlib import Path
 
@@ -35,6 +37,9 @@ BASE_URL = "https://pradan.issdc.gov.in"
 PAYLOAD_VISIT_URL = f"{BASE_URL}/ch2/protected/payload.xhtml"
 TQDM_PARAMS = dict(unit="B", unit_scale=True, unit_divisor=1024, mininterval=1)
 BLOCK_SIZE = 8192
+# zipfile issues many tiny reads; a BufferedReader coalesces them into range GETs. Bulk readers
+# pass a larger size.
+RANGE_BUFFER_SIZE = 64 * 1024
 RETRIES = 5
 RETRY_SLEEP_SEC = 2
 RETRY_HTTP_CODES = [
@@ -358,8 +363,82 @@ class SetInterval:
         self.stop_event.set()
 
 
+class HTTPRangeReader(io.RawIOBase):
+    """Seekable read-only file over an HTTP resource that supports byte ranges."""
+
+    def __init__(self, session, url, size):
+        self.session, self.url, self.size, self.pos = session, url, size, 0
+
+    def seekable(self):
+        return True
+
+    def readable(self):
+        return True
+
+    def tell(self):
+        return self.pos
+
+    def seek(self, offset, whence=io.SEEK_SET):
+        if whence == io.SEEK_SET:
+            self.pos = offset
+        elif whence == io.SEEK_CUR:
+            self.pos += offset
+        elif whence == io.SEEK_END:
+            self.pos = self.size + offset
+        return self.pos
+
+    def read(self, n=-1):
+        end = self.size if (n is None or n < 0) else min(self.pos + n, self.size)
+        if self.pos >= self.size or end <= self.pos:
+            return b""
+        r = self.session.request("get", self.url, headers={"Range": f"bytes={self.pos}-{end - 1}"}, timeout=120)
+        r.raise_for_status()
+        data = r.content
+        self.pos += len(data)
+        return data
+
+    def readinto(self, b):
+        data = self.read(len(b))
+        b[: len(data)] = data
+        return len(data)
+
+
 # Functions
-def main(file_paths, out_dir="./data", verbose=2, logfile=".issdc.log"):
+def open_remote(session, name, buffer_size=RANGE_BUFFER_SIZE):
+    """
+    Open a zip on PRADAN as a lazy, seekable ZipFile. Returns (ZipFile, size in bytes).
+
+    Only the zip's central directory is transferred here; each member is its own deflate
+    stream, so reading one member costs only that member.
+
+    Parameters
+    ----------
+    session: ISSDCRequester
+    name: str
+      File name, partial path or full URL, anything img2url() accepts.
+    """
+    url = img2url(name)
+    with session.request("head", url) as head:
+        if head.status_code != 200:
+            raise OSError(f"not on server (HTTP {head.status_code}): {url}")
+        size = int(head.headers["content-length"])
+        if head.headers.get("Accept-Ranges") != "bytes":
+            raise OSError(f"server does not support byte ranges: {url}")
+    return zipfile.ZipFile(io.BufferedReader(HTTPRangeReader(session, url, size), buffer_size)), size
+
+
+def verify_zip(path, deep=False):
+    """
+    Check a downloaded zip. Raises zipfile.BadZipFile if the archive is truncated or corrupt.
+
+    Reads only the central directory by default. `deep` decompresses every member to check its
+    CRC32 and returns the name of the first bad member, or None if all pass.
+    """
+    with zipfile.ZipFile(path) as zf:
+        return zf.testzip() if deep else None
+
+
+def main(file_paths, out_dir="./data", verbose=2, logfile=".issdc.log", deep_verify=False):
     """
     Main function to process and download files from ISSDC.
     Args:
@@ -367,6 +446,7 @@ def main(file_paths, out_dir="./data", verbose=2, logfile=".issdc.log"):
         out_dir (str, optional): Output directory where files will be downloaded. Defaults to ".".
         verbose (int, optional): Verbosity level for logging (0-3). Defaults to 0.
         logfile (str, optional): Log file name. Defaults to ".issdc.log".
+        deep_verify (bool, optional): CRC-check every member of downloaded zips. Slow.
     Returns:
         None
     """
@@ -391,7 +471,7 @@ def main(file_paths, out_dir="./data", verbose=2, logfile=".issdc.log"):
         logging.info(f"Success! Starting download of {len(file_paths)} file(s).")
         for file_path in file_paths:
             logging.info(f"Starting {Path(file_path).name}")
-            download(creds, file_path, out_dir)
+            download(creds, file_path, out_dir, deep_verify=deep_verify)
 
         logging.info(f"Finished downloading to {Path(out_dir).resolve()}.")
 
@@ -434,7 +514,7 @@ def _download(session, file_url, data_dir, total_size, byte_range_support, block
     logging.debug(f"Downloaded complete: {fp}")
 
 
-def download(session, file_url, data_dir):
+def download(session, file_url, data_dir, deep_verify=False):
     """
     Download a file using a logged in ISSDCRequester session.
 
@@ -445,12 +525,27 @@ def download(session, file_url, data_dir):
       Full url starting `https://pradan.issdc.gov` and often ending `.ext?instrument`.
       > Ex. 'https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/cla_collection/cla/data/calibrated/2023/11/23/ch2_cla_l1_20231123T231214771_20231123T231220147.fits?class'
     data_dir: str
+    deep_verify: bool
+      CRC-check every member of a downloaded zip, on top of the completeness check. Slow.
     """
     # Initial request: get file size, check byte range (resume partial download) support
     with session.request("head", file_url) as response:
         byte_range_support = response.headers.get("Accept-Ranges", "") == "bytes"
         total_size = int(response.headers.get("content-length", 0))
-    return _download(session, file_url, data_dir, total_size, byte_range_support)
+    _download(session, file_url, data_dir, total_size, byte_range_support)
+
+    fp = Path(data_dir) / Path(file_url).name.split("?")[0]
+    if fp.suffix != ".zip" or not fp.exists():
+        return
+    try:
+        bad = verify_zip(fp, deep_verify)
+    except zipfile.BadZipFile as err:
+        bad = str(err) or "unreadable archive"
+    if bad:
+        logging.error(f"CORRUPT {fp}: {bad}. Delete it and re-run to redownload.")
+        print(f"CORRUPT {fp.name}: {bad}. Delete it and re-run to redownload.", file=sys.stderr)
+    else:
+        logging.debug(f"Verified archive: {fp}")
 
 
 def other_download_url(img_url: str) -> str:
@@ -759,6 +854,11 @@ def main_cli():
     parser.add_argument(
         "--dry-run", action="store_true", help="Check if files exist on the server without downloading."
     )
+    parser.add_argument(
+        "--deep-verify",
+        action="store_true",
+        help="CRC-check every member of each downloaded zip (slow; a completeness check always runs).",
+    )
     # Parse arguments
     args = parser.parse_args()
 
@@ -774,7 +874,7 @@ def main_cli():
         if args.dry_run:
             check_files_exist(files, args.out_dir, args.verbose, args.logfile)
         else:
-            main(files, args.out_dir, args.verbose, args.logfile)
+            main(files, args.out_dir, args.verbose, args.logfile, args.deep_verify)
     # Main data downloader
     else:
         if not args.file_list:
@@ -782,7 +882,7 @@ def main_cli():
         if args.dry_run:
             check_files_exist(args.file_list, args.out_dir, args.verbose, args.logfile)
         else:
-            main(args.file_list, args.out_dir, args.verbose, args.logfile)
+            main(args.file_list, args.out_dir, args.verbose, args.logfile, args.deep_verify)
 
 
 if __name__ == "__main__":
