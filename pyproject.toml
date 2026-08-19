@@ -1,9 +1,9 @@
 [project]
 name = "issdc"
-version = "0.3.0"
+version = "0.4.0"
 description = "ISSDC Pradan Downloader"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = "MIT"
 authors = [
     {name = "Christian J. Tai Udovicic"},
@@ -25,6 +25,7 @@ Issues = "https://github.com/cjtu/issdc-requester/issues"
 [project.scripts]
 issdc = "issdc:main_cli"
 issdc-index = "issdc_index:main_cli"
+issdc-iirs = "issdc_iirs:main_cli"
 
 [build-system]
 requires = ["hatchling"]
@@ -33,4 +34,4 @@ build-backend = "hatchling.build"
 # Flat layout: hatchling infers issdc.py from the project name, but not the second module
 # or the index data file, so list them explicitly.
 [tool.hatch.build.targets.wheel]
-include = ["issdc.py", "issdc_index.py", "iirs_index.jsonl"]
+include = ["issdc.py", "issdc_index.py", "issdc_iirs.py", "iirs_index.jsonl"]

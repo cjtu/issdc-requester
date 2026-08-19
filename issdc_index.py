@@ -26,17 +26,15 @@ over plain dicts with nothing to import but the standard library.
 from __future__ import annotations
 
 import argparse
-import io
 import json
 import sys
 import warnings
 import xml.etree.ElementTree as ET
-import zipfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 
-from issdc import ISSDC_PASSWORD, ISSDC_USERNAME, ISSDCRequester, img2url
+from issdc import ISSDC_PASSWORD, ISSDC_USERNAME, ISSDCRequester, img2url, open_remote
 from tqdm import tqdm
 
 INDEX = Path(__file__).parent / "iirs_index.jsonl"
@@ -50,10 +48,6 @@ def failures_path(index_path=INDEX):
     index_path = Path(index_path)
     return index_path.with_name(index_path.stem + "_failures.txt")
 
-
-# zipfile issues many tiny reads; BufferedReader coalesces them into range GETs. Larger buffers
-# overfetch and time out against PRADAN.
-RANGE_BUFFER_SIZE = 64 * 1024
 
 # Instrument properties identical across every scene indexed so far, spanning nri/nci/ndi. Kept
 # out of the rows and merged back by load(), so callers see them on every row. A scene that
@@ -330,46 +324,6 @@ def update_georef(file_id, source, path=INDEX, **corners):
 # ---------------------------------------------------------------- ingest
 
 
-class HTTPRangeReader(io.RawIOBase):
-    """Seekable read-only file over an HTTP resource that supports byte ranges."""
-
-    def __init__(self, session, url, size):
-        self.session, self.url, self.size, self.pos = session, url, size, 0
-
-    def seekable(self):
-        return True
-
-    def readable(self):
-        return True
-
-    def tell(self):
-        return self.pos
-
-    def seek(self, offset, whence=io.SEEK_SET):
-        if whence == io.SEEK_SET:
-            self.pos = offset
-        elif whence == io.SEEK_CUR:
-            self.pos += offset
-        elif whence == io.SEEK_END:
-            self.pos = self.size + offset
-        return self.pos
-
-    def read(self, n=-1):
-        end = self.size if (n is None or n < 0) else min(self.pos + n, self.size)
-        if self.pos >= self.size or end <= self.pos:
-            return b""
-        r = self.session.request("get", self.url, headers={"Range": f"bytes={self.pos}-{end - 1}"}, timeout=120)
-        r.raise_for_status()
-        data = r.content
-        self.pos += len(data)
-        return data
-
-    def readinto(self, b):
-        data = self.read(len(b))
-        b[: len(data)] = data
-        return len(data)
-
-
 def read_names(source):
     """
     File ids from a names file: JSON (any nesting of lists, e.g. the scraper's {e1: [...]})
@@ -403,13 +357,8 @@ def read_names(source):
 def fetch_row(session, file_id):
     """Read one product's label through a ranged zip read and return its index row."""
     url = img2url(file_id)
-    with session.request("head", url) as head:
-        head.raise_for_status()
-        bundle_size = int(head.headers["content-length"])
-        if head.headers.get("Accept-Ranges") != "bytes":
-            raise OSError("server does not support byte ranges")
-    reader = io.BufferedReader(HTTPRangeReader(session, url, bundle_size), buffer_size=RANGE_BUFFER_SIZE)
-    with zipfile.ZipFile(reader) as zf:
+    zf, bundle_size = open_remote(session, url)
+    with zf:
         labels = [m for m in zf.infolist() if m.filename.lower().endswith(".xml") and "/data/" in "/" + m.filename]
         if not labels:
             raise OSError("no data/*.xml label in bundle")
