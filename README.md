@@ -31,7 +31,7 @@ issdc --test
 To use the CLI, provide a text file containing the list of the urls from PRADAN to download, one per line:
 
 ```txt
-# file_list.txt
+# file_list.txt (full urls or just image IDs are both acceptable)
 https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/xsm_collection/auto/2025/ch2_xsm_20250308_v1.zip?xsm
 https://pradan.issdc.gov.in/ch2/protected/downloadFile/common_pds4structure/isda_mission_bundle.zip
 ch2_sar_ncls_20200305t114902885_d_cp_d18
@@ -52,57 +52,53 @@ issdc file_list.txt -o ./my_data
 
 If the download is interrupted, run the same command to resume where it left off.
 
-## Partial downloads: `issdc-iirs`
+## Partial downloads (IIRS only): `issdc-iirs`
 
-An IIRS bundle is a multi-GB zip whose bulk is one `.qub` cube. PRADAN supports byte ranges, so
-`issdc-iirs` mounts the remote zip and reads only the members you ask for — no full download.
+An IIRS bundle is a multi-GB zip. Use `issdc-iirs` to read only requested parts of the bundle.
 
-Fetch just the ancillary files (seconds, ~30 MB out of a 5.5 GB bundle):
+Fetch just the ancillary files (~30 MB out of a 5.5 GB bundle):
 
 ```sh
 issdc-iirs --include '*.oat,*.spm' -o ./data ch2_iir_nci_20201202T1923525130_d_img_d32
 ```
 
-Globs are case-insensitive and match the internal path or the bare name (`geometry/*` works too).
-`--exclude` defaults to `*.qub`; passing your own replaces that default rather than adding to it.
+The include patterns are case-insensitive and can match extensions or part of the IIRS file path  (e.g. `--include 'geometry/*'` works too). The `--exclude` defaults to `*.qub` (if you want the full image cube, use the plain `issdc` command above).
 
-Fetch selected bands out of the cube:
+Fetch a subset of the bands from the cube:
 
 ```sh
 issdc-iirs --bands 10,54,100-110 -o ./data ch2_iir_nci_20201202T1923525130_d_img_d32
 ```
 
-The cube is BSQ, so a band is contiguous — but deflate has no random access inside a member, so
-reaching band N means inflating and discarding everything before it. **Cost scales with the
-highest band requested, not the count**: band 54 of 256 is ~21% of the stream, band 251 ~98%.
+**Note:** Due to how the data is organized and zipped, speed depends on the highest band requested, NOT the total number of bands (e.g. requesting just band 200 will take as long as requesting all bands 1-200).
 
-The subset is written **sparse at full size**: each band lands at its true offset and the
-bundle's own ENVI header is kept, so the file opens as an ordinary 256-band IIRS cube with
-unfetched bands reading as zero — `read(54)` is band 54, no band-name bookkeeping. Apparent size
-is the whole cube; real disk use is only what was fetched (`du`, not `ls`). Re-running with
-different bands fills in the same file.
+The subset is written as a **compact cube**: only the requested bands, packed in the order given. The ENVI header will have `band names` and `wavelength` corresponding to each band
 
-Names may also be local zip paths, in which case the network is skipped entirely.
+Names may also be the path to a local zip file (e.g. downloaded with `issdc`), in which case nothing is downloaded. Helpful for unpacking a subset of IIRS bands without unzipping the full cube.
 
-### Integrity
 
-- Every member is CRC32-checked by `zipfile` as it decompresses.
-- Extracted files are md5-checked against the `md5_checksum` in their PDS4 label. Only labelled
-  products publish one — the cube, the geometry csv, the browse png; `miscellaneous/` files
-  (`.oat`, `.spm`, `.lbr`) have no label, so the CRC is all there is. `--no-verify` skips it.
-- A downloaded `.zip` is checked for completeness as soon as it lands; `issdc --deep-verify`
-  CRC-checks every member too (slow on a multi-GB bundle). PRADAN publishes no checksum for the
-  zip itself — no `Content-MD5`, and the ETag is only size+mtime.
-- A band subset is partial by construction, so neither check applies to it.
+## Tests
 
-## Metadata index: `issdc-index`
-
-`issdc-index` uses the same ranged reads to scrape each product's PDS4 label (~75 KB out of a
-multi-GB bundle) into a local, queryable `iirs_index.jsonl`. See the module docstring.
-
-## Offline tests
+Test installation and `.env` setup:
 
 ```sh
-issdc-iirs --selftest    # synthetic bundle, no credentials or network
-issdc-index --selftest
+issdc --test
+```
+
+Offline tests (for devs):
+
+```sh
+python tests/test_issdc_iirs.py
+python tests/test_issdc_index.py
+python tests/test_stub_guard.py
+```
+
+End to end test (dev only):
+
+```sh
+python tests/test_e2e_download.py
+``` 
+
+```sh
+python tests/test_e2e_download.py
 ```
