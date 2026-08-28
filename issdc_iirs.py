@@ -5,7 +5,7 @@ Fetch parts of a Chandrayaan-2 IIRS bundle from PRADAN over HTTP byte ranges.
     issdc-iirs --bands 10,54,100-110 ch2_iir_nci_20201202T1923525130_d_img_d32
 
 Members are selected by case-insensitive glob against the internal path or the bare file name;
-``.qub`` is excluded by default. Bands are read out of the ``.qub`` into a compact ENVI cube,with 
+``.qub`` is excluded by default. Bands are read out of the ``.qub`` into a compact ENVI cube,with
 ``band names`` and ``wavelength`` (nm) specify the downloaded bands. Download cost scales with the
 highest band requested (need to inflate BSQ zip sequentially). Names can be paths to local zips.
 
@@ -36,6 +36,7 @@ ENVI_ITEMSIZE = {1: 1, 2: 2, 3: 4, 4: 4, 5: 8, 6: 8, 9: 16, 12: 2, 13: 4, 14: 8,
 # IIRS 256-band centre-wavelength table (nm)
 WAVELENGTHS_CSV = Path(__file__).parent / "resources" / "ch2_iirs_wavelengths.csv"
 
+
 def wavelengths():
     """{band_number: centre_wavelength_nm} from the packaged IIRS band table."""
     with open(WAVELENGTHS_CSV, newline="") as f:
@@ -49,7 +50,7 @@ class ChecksumError(Exception):
 
 def md5(path, block=1 << 20):
     """Return md5 hex digest of a file."""
-    h = hashlib.md5()  # noqa: S324  -- matching the md5 the archive publishes
+    h = hashlib.md5()
     with open(path, "rb") as f:
         for chunk in iter(lambda: f.read(block), b""):
             h.update(chunk)
@@ -222,11 +223,12 @@ def fetch(names, out_dir="./data", include=(), exclude=DEFAULT_EXCLUDE, bands=No
     Fetch members and/or bands for each bundle in `names`. Returns {name: [paths]}.
 
     `names` are file ids, URLs, or paths to bundles on disk. Pass an ISSDCRequester as `session`
-    to reuse one login; otherwise one is opened for the batch. A remote bundle re-authenticates
-    per name and retries once on a dead session; transient connection drops are already retried
-    underneath by the range reader itself.
+    to reuse one login; otherwise one is opened for the batch, unless every name is already a
+    local path -- a purely local fetch needs no PRADAN credentials at all. A remote bundle
+    re-authenticates per name and retries once on a dead session; transient connection drops are
+    already retried underneath by the range reader itself.
     """
-    if session is None:
+    if session is None and not all(Path(name).exists() for name in names):
         with ISSDCRequester(ISSDC_USERNAME, ISSDC_PASSWORD) as new_session:
             return fetch(names, out_dir, include, exclude, bands, verify_md5, new_session)
 
