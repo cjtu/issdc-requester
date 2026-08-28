@@ -1,6 +1,6 @@
 [project]
 name = "issdc"
-version = "0.4.0"
+version = "0.4.3"
 description = "ISSDC Pradan Downloader"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -32,6 +32,16 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 # Flat layout: hatchling infers issdc.py from the project name, but not the second module
-# or the index data file, so list them explicitly.
+# or the resources/ data files, so list them explicitly.
 [tool.hatch.build.targets.wheel]
-include = ["issdc.py", "issdc_index.py", "issdc_iirs.py", "iirs_index.jsonl"]
+include = ["issdc.py", "issdc_index.py", "issdc_iirs.py", "resources/*"]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.16.5",
+]
+
+# target-version pinned to requires-python's floor so that autofixes don't assume a newer version
+[tool.ruff]
+target-version = "py39"
+line-length = 120

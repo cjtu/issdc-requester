@@ -35,10 +35,12 @@ else:
 # Constants
 BASE_URL = "https://pradan.issdc.gov.in"
 PAYLOAD_VISIT_URL = f"{BASE_URL}/ch2/protected/payload.xhtml"
-TQDM_PARAMS = dict(unit="B", unit_scale=True, unit_divisor=1024, mininterval=1)
+IDP_HOST = "idp.issdc.gov.in"  # a request redirected here means the session died, not a real 404
+# mininterval=1 live-updates a real terminal; redirected to a file (nohup, a log), tqdm's `\r`
+# updates never overwrite and every one becomes its own line, so back off to one line per 30 s.
+TQDM_PARAMS = dict(unit="B", unit_scale=True, unit_divisor=1024, mininterval=1 if sys.stderr.isatty() else 30)
 BLOCK_SIZE = 8192
-# zipfile issues many tiny reads; a BufferedReader coalesces them into range GETs. Bulk readers
-# pass a larger size.
+# zipfile issues many tiny reads; a BufferedReader coalesces them into range GETs.
 RANGE_BUFFER_SIZE = 64 * 1024
 RETRIES = 5
 RETRY_SLEEP_SEC = 2
@@ -115,7 +117,7 @@ TEST_FILES = [
     # CLASS .fits (L1 file)
     "https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/cla_collection/cla/data/calibrated/2019/09/13/ch2_cla_l1_20190913T065629048_20190913T065637048.fits?class",
 ]
-OTHER_DOWNLOADS = "other_downloads.txt"
+OTHER_DOWNLOADS = Path(__file__).parent / "resources" / "other_downloads.txt"
 
 # Instrument mapping for Other Downloads
 OD_INSTRUMENT_MAP = {
@@ -163,6 +165,9 @@ def retry_http(retries, retry_sleep_sec, retry_http_codes):
             while attempt < retries:
                 try:
                     return func(*args, **kwargs)
+                except SessionExpired:
+                    # A dead session won't fix itself by retrying; let main()'s refresh-and-retry handle it.
+                    raise
                 except HTTPError as err:  # Other exceptions are raised as usual
                     logging.error(err, exc_info=True)
                     if err.response.status_code not in retry_http_codes:
@@ -193,6 +198,10 @@ def retry_http(retries, retry_sleep_sec, retry_http_codes):
 
 
 # Classes
+class SessionExpired(Exception):
+    """Raised when a request indicates a dead session without throwing a normal HTTPError."""
+
+
 class ISSDCRequester:
     """
     ISSDCRequester handles authentication and requests to the ISSDC server.
@@ -387,11 +396,14 @@ class HTTPRangeReader(io.RawIOBase):
             self.pos = self.size + offset
         return self.pos
 
+    @retry_http(RETRIES, RETRY_SLEEP_SEC, RETRY_HTTP_CODES)
     def read(self, n=-1):
         end = self.size if (n is None or n < 0) else min(self.pos + n, self.size)
         if self.pos >= self.size or end <= self.pos:
             return b""
         r = self.session.request("get", self.url, headers={"Range": f"bytes={self.pos}-{end - 1}"}, timeout=120)
+        if r.status_code == 403 or IDP_HOST in r.url:
+            raise SessionExpired(self.url)
         r.raise_for_status()
         data = r.content
         self.pos += len(data)
@@ -409,7 +421,8 @@ def open_remote(session, name, buffer_size=RANGE_BUFFER_SIZE):
     Open a zip on PRADAN as a lazy, seekable ZipFile. Returns (ZipFile, size in bytes).
 
     Only the zip's central directory is transferred here; each member is its own deflate
-    stream, so reading one member costs only that member.
+    stream, so reading one member costs only that member. Each range read retries transient
+    connection drops and raises SessionExpired on a dead session, the same as download().
 
     Parameters
     ----------
@@ -419,6 +432,8 @@ def open_remote(session, name, buffer_size=RANGE_BUFFER_SIZE):
     """
     url = img2url(name)
     with session.request("head", url) as head:
+        if head.status_code == 403 or IDP_HOST in head.url:
+            raise SessionExpired(url)
         if head.status_code != 200:
             raise OSError(f"not on server (HTTP {head.status_code}): {url}")
         size = int(head.headers["content-length"])
@@ -427,18 +442,7 @@ def open_remote(session, name, buffer_size=RANGE_BUFFER_SIZE):
     return zipfile.ZipFile(io.BufferedReader(HTTPRangeReader(session, url, size), buffer_size)), size
 
 
-def verify_zip(path, deep=False):
-    """
-    Check a downloaded zip. Raises zipfile.BadZipFile if the archive is truncated or corrupt.
-
-    Reads only the central directory by default. `deep` decompresses every member to check its
-    CRC32 and returns the name of the first bad member, or None if all pass.
-    """
-    with zipfile.ZipFile(path) as zf:
-        return zf.testzip() if deep else None
-
-
-def main(file_paths, out_dir="./data", verbose=2, logfile=".issdc.log", deep_verify=False):
+def main(file_paths, out_dir="./data", verbose=2, logfile=".issdc.log", verify_zip=False):
     """
     Main function to process and download files from ISSDC.
     Args:
@@ -446,7 +450,7 @@ def main(file_paths, out_dir="./data", verbose=2, logfile=".issdc.log", deep_ver
         out_dir (str, optional): Output directory where files will be downloaded. Defaults to ".".
         verbose (int, optional): Verbosity level for logging (0-3). Defaults to 0.
         logfile (str, optional): Log file name. Defaults to ".issdc.log".
-        deep_verify (bool, optional): CRC-check every member of downloaded zips. Slow.
+        verify_zip (bool, optional): CRC-check every member of downloaded zips. Slow.
     Returns:
         None
     """
@@ -471,7 +475,12 @@ def main(file_paths, out_dir="./data", verbose=2, logfile=".issdc.log", deep_ver
         logging.info(f"Success! Starting download of {len(file_paths)} file(s).")
         for file_path in file_paths:
             logging.info(f"Starting {Path(file_path).name}")
-            download(creds, file_path, out_dir, deep_verify=deep_verify)
+            try:
+                download(creds, file_path, out_dir, verify_zip=verify_zip)
+            except SessionExpired:
+                logging.warning(f"Session expired on {Path(file_path).name}; refreshing and retrying.")
+                creds.refresh()
+                download(creds, file_path, out_dir, verify_zip=verify_zip)
 
         logging.info(f"Finished downloading to {Path(out_dir).resolve()}.")
 
@@ -486,15 +495,18 @@ def _download(session, file_url, data_dir, total_size, byte_range_support, block
     """
     file_name = Path(file_url).name.split("?")[0]
     fp = Path(data_dir) / file_name
+    if total_size == 0:
+        # Dead session HEAD responses look like 404 (content-length: 0).
+        # Clean up if file was downloaded as a stub, then stop.
+        logging.info(f"File not found on server: {file_url}")
+        if fp.exists() and fp.stat().st_size == 0:
+            os.remove(fp)
+        return
     open_mode = "ab" if byte_range_support else "wb"
     with open(fp, open_mode) as f:
         pos = f.tell()
         logging.debug(f"Opened file: {fp} at byte {pos}.")
         if pos >= total_size:
-            if total_size == 0:
-                logging.info(f"File not found on server: {file_url}")
-                os.remove(fp)
-                return
             logging.info(f"Skipping... File already downloaded: {fp}")
             return
         headers = None
@@ -502,6 +514,8 @@ def _download(session, file_url, data_dir, total_size, byte_range_support, block
             headers = {"Range": f"bytes={f.tell()}-"}
         logging.debug(f"Downloading {fp} with headers: {headers}")
         with session.request("get", file_url, stream=True, headers=headers) as response:
+            if response.status_code == 403 or IDP_HOST in response.url:
+                raise SessionExpired(file_url)
             response.raise_for_status()  # raise bad html status as HTTPError exception
             if "tqdm" in sys.modules:
                 with tqdm(desc=file_name, initial=pos, total=total_size, **TQDM_PARAMS) as pbar:
@@ -514,7 +528,7 @@ def _download(session, file_url, data_dir, total_size, byte_range_support, block
     logging.debug(f"Downloaded complete: {fp}")
 
 
-def download(session, file_url, data_dir, deep_verify=False):
+def download(session, file_url, data_dir, verify_zip=False):
     """
     Download a file using a logged in ISSDCRequester session.
 
@@ -525,11 +539,18 @@ def download(session, file_url, data_dir, deep_verify=False):
       Full url starting `https://pradan.issdc.gov` and often ending `.ext?instrument`.
       > Ex. 'https://pradan.issdc.gov.in/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/cla_collection/cla/data/calibrated/2023/11/23/ch2_cla_l1_20231123T231214771_20231123T231220147.fits?class'
     data_dir: str
-    deep_verify: bool
+    verify_zip: bool
       CRC-check every member of a downloaded zip, on top of the completeness check. Slow.
     """
     # Initial request: get file size, check byte range (resume partial download) support
     with session.request("head", file_url) as response:
+        logging.debug(
+            f"HEAD {file_url} -> status={response.status_code} url={response.url} "
+            f"content-length={response.headers.get('content-length')} "
+            f"accept-ranges={response.headers.get('Accept-Ranges')}"
+        )
+        if response.status_code == 403 or IDP_HOST in response.url:
+            raise SessionExpired(file_url)
         byte_range_support = response.headers.get("Accept-Ranges", "") == "bytes"
         total_size = int(response.headers.get("content-length", 0))
     _download(session, file_url, data_dir, total_size, byte_range_support)
@@ -538,9 +559,14 @@ def download(session, file_url, data_dir, deep_verify=False):
     if fp.suffix != ".zip" or not fp.exists():
         return
     try:
-        bad = verify_zip(fp, deep_verify)
+        with zipfile.ZipFile(fp) as zf:
+            if verify_zip:
+                bad = zf.testzip()
+            else:
+                bad = None
     except zipfile.BadZipFile as err:
         bad = str(err) or "unreadable archive"
+
     if bad:
         logging.error(f"CORRUPT {fp}: {bad}. Delete it and re-run to redownload.")
         print(f"CORRUPT {fp.name}: {bad}. Delete it and re-run to redownload.", file=sys.stderr)
@@ -795,16 +821,12 @@ def read_file_paths(file_path: str) -> list:
 
 
 def main_cli():
-    ## DEBUG ##
-    # main(['/ch2/protected/downloadData/POST_OD/isda_archive/ch2_bundle/cho_bundle/nop/cla_collection/cla/data/calibrated/2024/11/30/ch2_cla_l1_20241130T233743748_20241130T233747523.fits?class'], verbose=3)
-    # quit()
-
     # Set up argument parser
     help_info = """Download files from ISSDC PRADAN server.
 
-    Prerequisites: 
-    1) pip or conda install requests tqdm
-    2) Create file .env with 2 lines: ISSDC_USERNAME=user@email.com ISSDC_PASSWORD=password
+    Ensure this directory has a file called .env with 2 lines (PRADAN login): 
+    ISSDC_USERNAME=user@email.com 
+    ISSDC_PASSWORD=password
     """
     parser = argparse.ArgumentParser(description=help_info)
     parser.add_argument(
@@ -855,7 +877,7 @@ def main_cli():
         "--dry-run", action="store_true", help="Check if files exist on the server without downloading."
     )
     parser.add_argument(
-        "--deep-verify",
+        "--verify-zip",
         action="store_true",
         help="CRC-check every member of each downloaded zip (slow; a completeness check always runs).",
     )
@@ -874,7 +896,7 @@ def main_cli():
         if args.dry_run:
             check_files_exist(files, args.out_dir, args.verbose, args.logfile)
         else:
-            main(files, args.out_dir, args.verbose, args.logfile, args.deep_verify)
+            main(files, args.out_dir, args.verbose, args.logfile, args.verify_zip)
     # Main data downloader
     else:
         if not args.file_list:
@@ -882,7 +904,7 @@ def main_cli():
         if args.dry_run:
             check_files_exist(args.file_list, args.out_dir, args.verbose, args.logfile)
         else:
-            main(args.file_list, args.out_dir, args.verbose, args.logfile, args.deep_verify)
+            main(args.file_list, args.out_dir, args.verbose, args.logfile, args.verify_zip)
 
 
 if __name__ == "__main__":
